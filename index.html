@@ -1,0 +1,103 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>¿Lleva retención?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una sola columna; tres preguntas arriba, veredicto grande abajo */
+:root{
+  --bg:#f7f4f1; --card:#ffffff; --fg:#2a1f1a; --muted:#7a6a62; --line:#e6ddd6;
+  --accent:#a8401c; --accent-soft:#f6e3d9;
+  --yes:#9a5b00; --yes-bg:#fff2d6; --no:#1f7a3a; --no-bg:#e3f3e7;
+  --display:"Bitter",Georgia,serif; --body:"Figtree",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1b1512; --card:#251d19; --fg:#f3ebe5; --muted:#b3a59c; --line:#3a2f29;
+  --accent:#e8794d; --accent-soft:#3a2219;
+  --yes:#f2c065; --yes-bg:#3a2c12; --no:#7fd69a; --no-bg:#16301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1b1512; --card:#251d19; --fg:#f3ebe5; --muted:#b3a59c; --line:#3a2f29;
+  --accent:#e8794d; --accent-soft:#3a2219;
+  --yes:#f2c065; --yes-bg:#3a2c12; --no:#7fd69a; --no-bg:#16301f; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px}
+.wrap{max-width:520px;margin:0 auto;padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:18px}
+header .brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-family:var(--display);font-size:28px;margin:4px 0 0;text-wrap:balance}
+.q{display:flex;flex-direction:column;gap:8px}
+.q label,.q .lbl{font-weight:600;font-size:15px}
+.money{display:flex;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:0 14px}
+.money:focus-within{border-color:var(--accent)}
+.money span{color:var(--muted);font-weight:600}
+.money input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);font:600 22px var(--body);padding:12px 8px;font-variant-numeric:tabular-nums;outline:none}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opt{border:1.5px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:12px;text-align:left;font:600 15px var(--body);cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.opt small{font-weight:400;color:var(--muted);font-size:12.5px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.result{border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;border:1.5px solid transparent}
+.result.yes{background:var(--yes-bg);border-color:var(--yes)}
+.result.no{background:var(--no-bg);border-color:var(--no)}
+.result.wait{background:var(--card);border-color:var(--line)}
+.verdict{font-family:var(--display);font-size:24px;line-height:1.2;text-wrap:balance}
+.yes .verdict{color:var(--yes)} .no .verdict{color:var(--no)}
+.why{font-size:15px}
+.tot{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">Family Grill · Ibagué</div>
+    <h1>¿Esta factura lleva retención?</h1>
+  </header>
+
+  <div class="q">
+    <label for="sub">1. Subtotal (antes de IVA)</label>
+    <div class="money"><span>$</span><input id="sub" inputmode="numeric" autocomplete="off" placeholder="0"></div>
+  </div>
+
+  <div class="q">
+    <label for="iva">2. IVA</label>
+    <div class="money"><span>$</span><input id="iva" inputmode="numeric" autocomplete="off" placeholder="0"></div>
+  </div>
+
+  <div class="q">
+    <div class="lbl">3. ¿Qué es?</div>
+    <div class="opts" id="tipo">
+      <button class="opt" data-t="compra" aria-pressed="false">Compra<small>Insumos, bebidas, empaques</small></button>
+      <button class="opt" data-t="fruver" aria-pressed="false">Fruver<small>Frutas y verduras</small></button>
+      <button class="opt" data-t="carnes" aria-pressed="false">Carnes<small>Res, cerdo, pollo</small></button>
+      <button class="opt" data-t="servicio" aria-pressed="false">Servicio<small>Mantenimiento, fletes, aseo</small></button>
+    </div>
+  </div>
+
+  <section class="result wait" id="res" aria-live="polite"></section>
+</div>
+
+<script>
+const UVT=52374;
+const REG={compra:{n:"compras",uvt:10},fruver:{n:"fruver",uvt:70},carnes:{n:"carnes",uvt:70},servicio:{n:"servicios",uvt:2}};
+let tipo=null;
+const $=id=>document.getElementById(id);
+const fmt=n=>"$"+Math.round(n).toLocaleString("es-CO");
+const num=el=>Number((el.value||"").replace(/[^\d]/g,""))||0;
+["sub","iva"].forEach(id=>$(id).addEventListener("input",e=>{const v=num(e.target);e.target.value=v?v.toLocaleString("es-CO"):"";calc();}));
+$("tipo").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;tipo=b.dataset.t;
+  $("tipo").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));calc();});
+
+function calc(){
+  const sub=num($("sub")),iva=num($("iva")),res=$("res");
+  if(!sub||!tipo){res.className="result wait";res.innerHTML='<div class="why">Escriba el subtotal y escoja qué es.</div>';return;}
+  const r=REG[tipo],base=r.uvt*UVT,tot=`<div class="tot">Total factura: ${fmt(sub+iva)}</div>`;
+  if(sub<base){
+    res.className="result no";
+    res.innerHTML=`<div class="verdict">No tiene retención</div><div class="why">No alcanza la base de ${r.n}, que es ${fmt(base)}.</div>${tot}`;
+  }else{
+    res.className="result yes";
+    res.innerHTML=`<div class="verdict">Puede tener retención: pregúntele a la contadora</div><div class="why">Supera la base de ${r.n}, que es ${fmt(base)}.</div>${tot}`;
+  }
+}
+calc();
+</script>
+
+</body></html>
